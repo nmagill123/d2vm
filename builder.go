@@ -401,10 +401,10 @@ func (b *builder) setupRootFS(ctx context.Context) (err error) {
 				return err
 			}
 		}
-		fstab = fmt.Sprintf("UUID=%s / ext4 errors=remount-ro 0 1\nUUID=%s /boot %s errors=remount-ro 0 2\n", b.rootUUID, b.bootUUID, b.bootFS.linux())
+		fstab = fmt.Sprintf("UUID=%s / ext4 errors=remount-ro 0 0\nUUID=%s /boot %s errors=remount-ro 0 0\n", b.rootUUID, b.bootUUID, b.bootFS.linux())
 	} else {
 		b.bootUUID = b.rootUUID
-		fstab = fmt.Sprintf("UUID=%s / ext4 errors=remount-ro 0 1\n", b.bootUUID)
+		fstab = fmt.Sprintf("UUID=%s / ext4 errors=remount-ro 0 0\n", b.bootUUID)
 	}
 	if err := b.chWriteFile("/etc/fstab", fstab, perm); err != nil {
 		return err

@@ -26,12 +26,19 @@ import (
 )
 
 const (
-	ReleaseUbuntu Release = "ubuntu"
-	ReleaseDebian Release = "debian"
-	ReleaseAlpine Release = "alpine"
-	ReleaseCentOS Release = "centos"
-	ReleaseRHEL   Release = "rhel"
-	ReleaseKali   Release = "kali"
+	ReleaseUbuntu   Release = "ubuntu"
+	ReleaseDebian   Release = "debian"
+	ReleaseAlpine   Release = "alpine"
+	ReleaseCentOS   Release = "centos"
+	ReleaseRHEL     Release = "rhel"
+	ReleaseKali     Release = "kali"
+	ReleaseFedora   Release = "fedora"
+	ReleaseAlma     Release = "almalinux"
+	ReleaseAmazon   Release = "amzn"
+	ReleaseOracle   Release = "ol"
+	ReleaseRocky    Release = "rocky"
+	ReleaseOpenSUSE Release = "opensuse-leap"
+	ReleaseDeepin   Release = "deepin"
 )
 
 type Release string
@@ -48,6 +55,20 @@ func (r Release) Supported() bool {
 		return true
 	case ReleaseCentOS:
 		return true
+	case ReleaseFedora:
+		return true
+	case ReleaseAlma:
+		return true
+	case ReleaseAmazon:
+		return true
+	case ReleaseOracle:
+		return true
+	case ReleaseRocky:
+		return true
+	case ReleaseOpenSUSE:
+		return true
+	case ReleaseDeepin:
+		return true
 	case ReleaseRHEL:
 		return false
 	default:
@@ -57,6 +78,7 @@ func (r Release) Supported() bool {
 
 type OSRelease struct {
 	ID              Release
+	IDLike          []string
 	Name            string
 	VersionID       string
 	Version         string
@@ -81,6 +103,20 @@ func (r OSRelease) SupportsLUKS() bool {
 		return true
 	case ReleaseAlpine:
 		return true
+	case ReleaseFedora:
+		return true
+	case ReleaseAlma:
+		return true
+	case ReleaseAmazon:
+		return true
+	case ReleaseOracle:
+		return true
+	case ReleaseRocky:
+		return true
+	case ReleaseOpenSUSE:
+		return true
+	case ReleaseDeepin:
+		return true
 	case ReleaseRHEL:
 		return false
 	default:
@@ -93,8 +129,16 @@ func ParseOSRelease(s string) (OSRelease, error) {
 	if err != nil {
 		return OSRelease{}, err
 	}
+	// Normalize ID to lowercase (e.g., Deepin reports "Deepin")
+	id := strings.ToLower(env["ID"])
+	// Parse ID_LIKE as space-separated list
+	var idLike []string
+	if like := env["ID_LIKE"]; like != "" {
+		idLike = strings.Fields(like)
+	}
 	o := OSRelease{
-		ID:              Release(strings.ToLower(env["ID"])),
+		ID:              Release(id),
+		IDLike:          idLike,
 		Name:            env["NAME"],
 		Version:         env["VERSION"],
 		VersionID:       env["VERSION_ID"],
@@ -109,4 +153,24 @@ func FetchDockerImageOSRelease(ctx context.Context, img string) (OSRelease, erro
 		return OSRelease{}, err
 	}
 	return ParseOSRelease(o)
+}
+
+// LikeRelease checks if the OS has a specific release in its ID_LIKE field
+func (r OSRelease) LikeRelease(release Release) bool {
+	for _, like := range r.IDLike {
+		if Release(like) == release {
+			return true
+		}
+	}
+	return false
+}
+
+// IsDebian returns true if the OS is Debian or Debian-like (e.g., Ubuntu, Deepin)
+func (r OSRelease) IsDebian() bool {
+	return r.ID == ReleaseDebian || r.ID == ReleaseUbuntu || r.ID == ReleaseKali || r.ID == ReleaseDeepin || r.LikeRelease(ReleaseDebian)
+}
+
+// IsFedora returns true if the OS is Fedora or Fedora-like (e.g., AlmaLinux, Oracle Linux)
+func (r OSRelease) IsFedora() bool {
+	return r.ID == ReleaseFedora || r.ID == ReleaseAlma || r.ID == ReleaseOracle || r.ID == ReleaseAmazon || r.LikeRelease(ReleaseFedora)
 }

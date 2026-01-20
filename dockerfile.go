@@ -36,11 +36,23 @@ var alpineDockerfile string
 //go:embed templates/centos.Dockerfile
 var centOSDockerfile string
 
+//go:embed templates/fedora.Dockerfile
+var fedoraDockerfile string
+
+//go:embed templates/amazon.Dockerfile
+var amazonDockerfile string
+
+//go:embed templates/opensuse.Dockerfile
+var opensuseDockerfile string
+
 var (
-	ubuntuDockerfileTemplate = template.Must(template.New("ubuntu.Dockerfile").Funcs(tplFuncs).Parse(ubuntuDockerfile))
-	debianDockerfileTemplate = template.Must(template.New("debian.Dockerfile").Funcs(tplFuncs).Parse(debianDockerfile))
-	alpineDockerfileTemplate = template.Must(template.New("alpine.Dockerfile").Funcs(tplFuncs).Parse(alpineDockerfile))
-	centOSDockerfileTemplate = template.Must(template.New("centos.Dockerfile").Funcs(tplFuncs).Parse(centOSDockerfile))
+	ubuntuDockerfileTemplate   = template.Must(template.New("ubuntu.Dockerfile").Funcs(tplFuncs).Parse(ubuntuDockerfile))
+	debianDockerfileTemplate   = template.Must(template.New("debian.Dockerfile").Funcs(tplFuncs).Parse(debianDockerfile))
+	alpineDockerfileTemplate   = template.Must(template.New("alpine.Dockerfile").Funcs(tplFuncs).Parse(alpineDockerfile))
+	centOSDockerfileTemplate   = template.Must(template.New("centos.Dockerfile").Funcs(tplFuncs).Parse(centOSDockerfile))
+	fedoraDockerfileTemplate   = template.Must(template.New("fedora.Dockerfile").Funcs(tplFuncs).Parse(fedoraDockerfile))
+	amazonDockerfileTemplate   = template.Must(template.New("amazon.Dockerfile").Funcs(tplFuncs).Parse(amazonDockerfile))
+	opensuseDockerfileTemplate = template.Must(template.New("opensuse.Dockerfile").Funcs(tplFuncs).Parse(opensuseDockerfile))
 )
 
 type NetworkManager string
@@ -89,6 +101,9 @@ func NewDockerfile(release OSRelease, img, password string, networkManager Netwo
 	case ReleaseKali:
 		d.tmpl = debianDockerfileTemplate
 		net = NetworkManagerIfupdown2
+	case ReleaseDeepin:
+		d.tmpl = debianDockerfileTemplate
+		net = NetworkManagerIfupdown2
 	case ReleaseUbuntu:
 		d.tmpl = ubuntuDockerfileTemplate
 		if release.VersionID < "18.04" {
@@ -108,11 +123,29 @@ func NewDockerfile(release OSRelease, img, password string, networkManager Netwo
 		if networkManager != "" && networkManager != NetworkManagerNone {
 			return Dockerfile{}, fmt.Errorf("network manager is not supported on centos")
 		}
+	case ReleaseFedora, ReleaseAlma, ReleaseOracle, ReleaseRocky:
+		d.tmpl = fedoraDockerfileTemplate
+		net = NetworkManagerNone
+		if networkManager != "" && networkManager != NetworkManagerNone {
+			return Dockerfile{}, fmt.Errorf("network manager is not supported on %s (uses NetworkManager)", release.ID)
+		}
+	case ReleaseAmazon:
+		d.tmpl = amazonDockerfileTemplate
+		net = NetworkManagerNone
+		if networkManager != "" && networkManager != NetworkManagerNone {
+			return Dockerfile{}, fmt.Errorf("network manager is not supported on amazon linux (uses systemd-networkd)")
+		}
+	case ReleaseOpenSUSE:
+		d.tmpl = opensuseDockerfileTemplate
+		net = NetworkManagerNone
+		if networkManager != "" && networkManager != NetworkManagerNone {
+			return Dockerfile{}, fmt.Errorf("network manager is not supported on opensuse (uses wicked)")
+		}
 	default:
 		return Dockerfile{}, fmt.Errorf("unsupported distribution: %s", release.ID)
 	}
 	if d.NetworkManager == "" {
-		if release.ID != ReleaseCentOS {
+		if release.ID != ReleaseCentOS && release.ID != ReleaseFedora && release.ID != ReleaseAlma && release.ID != ReleaseOracle && release.ID != ReleaseRocky && release.ID != ReleaseAmazon && release.ID != ReleaseOpenSUSE {
 			logrus.Warnf("no network manager specified, using distribution defaults: %s", net)
 		}
 		d.NetworkManager = net

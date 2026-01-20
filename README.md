@@ -34,6 +34,13 @@ Working and tested:
   Luks support is available only on Debian buster+
 - [x] Alpine
 - [x] CentOS (8+)
+- [x] Fedora (43+)
+- [x] AlmaLinux (9+)
+- [x] Rocky Linux (9+)
+- [x] Oracle Linux (9+)
+- [x] Amazon Linux (2023+)
+- [x] OpenSUSE Leap (15.6+)
+- [x] Deepin (23+)
 
 Unsupported:
 

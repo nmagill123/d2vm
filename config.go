@@ -36,6 +36,14 @@ var (
 		Kernel: "/boot/vmlinuz",
 		Initrd: "/boot/initrd.img",
 	}
+	configFedora = Config{
+		Kernel: "/boot/vmlinuz",
+		Initrd: "/boot/initrd.img",
+	}
+	configOpenSUSE = Config{
+		Kernel: "/boot/vmlinuz",
+		Initrd: "/boot/initrd",
+	}
 )
 
 type Root interface {
@@ -64,7 +72,9 @@ func (c Config) Cmdline(root Root, args ...string) string {
 	if root != nil {
 		r = fmt.Sprintf("root=%s", root.String())
 	}
-	return fmt.Sprintf("ro initrd=%s %s net.ifnames=0 rootfstype=ext4 console=tty0 console=ttyS0,115200n8 %s", c.Initrd, r, strings.Join(args, " "))
+	// Add rd.auto=1 for RHEL-based distros to enable automatic root detection
+	// Add fastboot to skip fsck in initramfs (RHEL systems have issues with fsck in initrd)
+	return fmt.Sprintf("ro initrd=%s %s net.ifnames=0 rootfstype=ext4 rd.auto=1 fastboot console=tty0 console=ttyS0,115200n8 %s", c.Initrd, r, strings.Join(args, " "))
 }
 
 func (r OSRelease) Config() (Config, error) {
@@ -78,10 +88,24 @@ func (r OSRelease) Config() (Config, error) {
 		return configDebian, nil
 	case ReleaseKali:
 		return configDebian, nil
+	case ReleaseDeepin:
+		return configDebian, nil
 	case ReleaseAlpine:
 		return configAlpine, nil
 	case ReleaseCentOS:
 		return configCentOS, nil
+	case ReleaseFedora:
+		return configFedora, nil
+	case ReleaseAlma:
+		return configFedora, nil
+	case ReleaseAmazon:
+		return configFedora, nil
+	case ReleaseOracle:
+		return configFedora, nil
+	case ReleaseRocky:
+		return configFedora, nil
+	case ReleaseOpenSUSE:
+		return configOpenSUSE, nil
 	default:
 		return Config{}, fmt.Errorf("%s: distribution not supported", r.ID)
 
